@@ -87,18 +87,27 @@ module.exports = createCoreController('api::event.event', ({ strapi }) => ({
       ])
     }
 
-    var [article] = await strapi.entityService 
+    var [event] = await strapi.entityService 
       .findMany('api::event.event', {
+        populate: '*',
         filters: {
           id: ctx.request.params.id, 
           user: user.id
         }
       })
-      
-    if (article) {
+    const imageId = event.image.id;
+  
+    if (event) {
+      const imageId = event.image?.id;
+      if (imageId) {
+        const imageEntry = await strapi.db.query('plugin::upload.file').delete({
+          where: { id: imageId },
+      });
+        await strapi.plugins.upload.services.upload.remove(imageEntry)
+      }
       const response = await super.delete(ctx)
-      const sanitizedArticle = await this.sanitizeOutput(response, ctx)
-      return this.transformResponse(sanitizedArticle)
+      const sanitizedEvent = await this.sanitizeOutput(response, ctx)
+      return this.transformResponse(sanitizedEvent)
     } else {
       return ctx.unauthorized()
     }
